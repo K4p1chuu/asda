@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taryfikator </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1F2937;
+            color: #d1d5db;
+        }
+        h1 {
+            color: #fcd34d;
+            border-bottom: 2px solid #374151;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .add-charge-btn:disabled {
+            background-color: #166534;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+
+    <div class="sticky top-0 bg-gray-800 p-4 mb-6 rounded-lg shadow-lg z-10">
+        <input type="text" id="search-input" class="w-full bg-gray-700 border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Wyszukaj zarzut...">
+    </div>
+
+    <div id="pricelist" class="space-y-8">
+        
+        <div class="charge-category">
+            <h1 class="text-2xl font-bold">Wykroczenia drogowe</h1>
+            <div id="charges-drogowe" class="space-y-3 text-base"></div>
+        </div>
+
+        <div class="charge-category">
+            <h1 class="text-2xl font-bold">Przestępstwa lekkie</h1>
+            <div id="charges-lekkie" class="space-y-3 text-base"></div>
+        </div>
+
+        <div class="charge-category">
+            <h1 class="text-2xl font-bold">Przestępstwa ciężkie</h1>
+            <div id="charges-ciezkie" class="space-y-3 text-base"></div>
+        </div>
+        
+        <div class="charge-category">
+            <h1 class="text-2xl font-bold">Broń i narkotyki</h1>
+            <div id="charges-bron" class="space-y-3 text-base"></div>
+        </div>
+
+        <div class="charge-category">
+            <h1 class="text-2xl font-bold">Użycie siły / uszczerbek na zdrowiu</h1>
+            <div id="charges-sila" class="space-y-3 text-base"></div>
+        </div>
+
+        <div class="charge-category">
+            <h1 class="text-2xl font-bold">Mandaty za prędkość</h1>
+            <div id="charges-predkosc" class="space-y-3 text-base"></div>
+        </div>
+    </div>
+
+    <script>
+        const allCharges = [
+            { id: 1, category: 'drogowe', name: "Jazda pod wpływem alkoholu lub substancji odurzających", price: 2250, lata: 0 },
+            { id: 2, category: 'drogowe', name: "Jazda bez świateł", price: 750, lata: 0 },
+            { id: 3, category: 'drogowe', name: "Przekroczenie prędkości w mieście", price: 2500, lata: 0 },
+            { id: 4, category: 'drogowe', name: "Brawurowa jazda", price: 3750, lata: 0 },
+            { id: 5, category: 'drogowe', name: "Stwarzanie zagrożenia w ruchu drogowym", price: 3250, lata: 0 },
+            { id: 6, category: 'drogowe', name: "Nie zatrzymanie do kontroli", price: 4250, lata: 5 },
+            { id: 7, category: 'drogowe', name: "Zły stan techniczny pojazdu / Brak OC / Brak badania technicznego", price: 1750, lata: 0 },
+            { id: 8, category: 'drogowe', name: "Przejazd na czerwonym świetle / Znaku STOP", price: 1100, lata: 0 },
+            { id: 9, category: 'drogowe', name: "Zniszczenie mienia", price: 1950, lata: 0 },
+            { id: 10, category: 'drogowe', name: "Spowodowanie wypadku", price: 2950, lata: 0 },
+            { id: 11, category: 'drogowe', name: "Potrącenie przechodnia", price: 5250, lata: 0 },
+            { id: 12, category: 'drogowe', name: "Niewłaściwe parkowanie", price: 1000, lata: 0 },
+            { id: 13, category: 'drogowe', name: "Przejście przez ulicę w miejscu niedozwolonym", price: 750, lata: 0 },
+            { id: 14, category: 'drogowe', name: "Niszczenie mienia publicznego / Jazda po zieleni", price: 1800, lata: 0 },
+            { id: 95, category: 'drogowe', name: "Jazda bez prawa jazdy, przedłużenie zabrania o 7 dni + odcholowanie pojazdu na parking WSP", price: 9500, lata: 0 },
+            { id: 87, category: 'drogowe', name: "Wymuszenie pierwszeństwa", price: 1250, lata: 0 },
+            { id: 86, category: 'drogowe', name: "Jazda pod prąd", price: 3250, lata: 0 },
+            { id: 85, category: 'drogowe', name: "Nielegalny U-Turn", price: 650, lata: 0 },
+            { id: 82, category: 'drogowe', name: "Udział w nielegalnym zlocie / wyścigu", price: 1500, lata: 0 },
+            { id: 83, category: 'drogowe', name: "Gazowanie na światłach / Drifty", price: 1750, lata: 0 },
+            { id: 96, category: 'drogowe', name: "Nielegalne wyprzedzanie / na lini ciągłej", price: 1000, lata: 0 },
+            { id: 97, category: 'drogowe', name: "Brake checking", price: 1200, lata: 0 },
+            { id: 98, category: 'drogowe', name: "Omijanie barier / blokad służb mundurowych", price: 4550, lata: 0 },
+            { id: 99, category: 'drogowe', name: "Nadmierne używanie sygnału dźwiękowego / świateł drogowych", price: 750, lata: 0 },
+            { id: 117, category: 'drogowe', name: "Utrudnianie płynności ruchu", price: 1000, lata: 0 },
+            { id: 100, category: 'drogowe', name: "Tamowanie ruchu", price: 2000, lata: 0 },
+            { id: 103, category: 'drogowe', name: "Wjazd na przejazd przy migającym czerwonym swietle", price: 2250, lata: 0 },
+            { id: 104, category: 'drogowe', name: "Nie poprawne zatrzymanie przed przejazdem kolejowym", price: 1250, lata: 0 },
+            { id: 105, category: 'drogowe', name: "Zatrzymanie się na torach", price: 3500, lata: 0 },
+            { id: 106, category: 'drogowe', name: "Objechanie / Znisczenie rogatek na przejeździe", price: 3000, lata: 0 },
+            { id: 107, category: 'drogowe', name: "Przejazd przez rogatki gdy się zamykają / otwierają", price: 1500, lata: 0 },
+            { id: 110, category: 'drogowe', name: "Skręt ze złego pasa", price: 700, lata: 0 },
+            { id: 111, category: 'drogowe', name: "Źle zarejestrowany pojazd + odholowanie pojazdu", price: 3500, lata: 0 },
+            { id: 112, category: 'drogowe', name: "Przejazd przez ciągłą linie", price: 1050, lata: 0 },
+            { id: 116, category: 'drogowe', name: "Jazda lewym pasem", price: 850, lata: 0 },
+            { id: 117, category: 'drogowe', name: "Nie zachowanie prawa Move Over or Slow Down", price: 3000, lata: 0 },
+            { id: 88, category: 'lekkie', name: "Zakłócanie porządku publicznego", price: 950, lata: 0 },
+            { id: 15, category: 'lekkie', name: "Spożywanie alkoholu w miejscu publicznym", price: 400, lata: 0 },
+            { id: 16, category: 'lekkie', name: "Niewykonywanie poleceń FP", price: 2000, lata: 10 },
+            { id: 17, category: 'lekkie', name: "Obraza FP", price: 950, lata: 0 },
+            { id: 18, category: 'lekkie', name: "Utrudnianie pracy służbom publicznym", price: 3500, lata: 0 },
+            { id: 19, category: 'lekkie', name: "Fałszywe zgłoszenie", price: 3250, lata: 0 },
+            { id: 20, category: 'lekkie', name: "Niszczenie cudzej własności", price: 950, lata: 0 },
+            { id: 21, category: 'lekkie', name: "Składanie fałszywych zeznań", price: 7500, lata: 15 },
+            { id: 22, category: 'lekkie', name: "Kradzież pojazdu", price: 17500, lata: 15 },
+            { id: 23, category: 'lekkie', name: "Posiadanie kontrabandy", price: 9000, lata: 10 },
+            { id: 24, category: 'lekkie', name: "Stawianie oporu", price: 5400, lata: 0 },
+            { id: 25, category: 'lekkie', name: "Kradzież cudzej własności", price: 5225, lata: 10 },
+            { id: 26, category: 'lekkie', name: "Chodzenie zamaskowanym po mieście", price: 1800, lata: 0 },
+            { id: 27, category: 'lekkie', name: "Próba przekupstwa", price: 8500, lata: 0 },
+            { id: 28, category: 'lekkie', name: "Kradzież radiowozu", price: 22500, lata: 30 },
+            { id: 77, category: 'lekkie', name: "Wtargnięcie na teren prywatny", price: 6750, lata: 10 },
+            { id: 78, category: 'lekkie', name: "Ucieczka z miejsca zdarzenia", price: 4500, lata: 0 },
+            { id: 81, category: 'lekkie', name: "Bezpodstwane użycie środków obezwładniających", price: 9500, lata: 25 },
+            { id: 84, category: 'lekkie', name: "Złamanie zakazu o niezbliżanie się", price: 6500, lata: 10 },
+            { id: 101, category: 'lekkie', name: "Nieetyczne propozycje w stronę FP (stosunek seks.)", price: 4750, lata: 0 },
+            { id: 102, category: 'lekkie', name: "Czyny nieetyczne w miejscu publicznym (stosunek seks.)", price: 3500, lata: 0 },
+            { id: 108, category: 'lekkie', name: "Wyłudzenie ubezpieczenia poprzez fałszywą kradzież auta", price: 17500, lata: 10 },
+            { id: 114, category: 'lekkie', name: "Podpalenie prywatnej posesji", price: 13500, lata: 15 },
+            { id: 115, category: 'lekkie', name: "Podpalenie rządowej(publicznej) posesji", price: 22500, lata: 25 },
+            { id: 117, category: 'lekkie', name: "Paserstwo (powyżej $2000)", price: 9795, lata: 25 },
+            { id: 118, category: 'lekkie', name: "Paserstwo (poniżej $2000)", price: 4255, lata: 10 },
+            { id: 119, category: 'lekkie', name: "Oszustwo podczas sprzedaży auta", price: 7125, lata: 15 },
+            { id: 120, category: 'lekkie', name: "Nielegalna prostytucja", price: 5500, lata: 15 },
+            { id: 121, category: 'lekkie', name: "Zniesławnie", price: 4550, lata: 10 },
+            { id: 122, category: 'lekkie', name: "Stalking", price: 9755, lata: 35 },
+            { id: 123, category: 'lekkie', name: "Cyberprzemoc", price: 5850, lata: 30 },
+            { id: 29, category: 'ciezkie', name: "Groźby przy użyciu broni", price: 11500, lata: 45 },
+            { id: 30, category: 'ciezkie', name: "Ucieczka przed WSP/OCSO", price: 9500, lata: 25 },
+            { id: 31, category: 'ciezkie', name: "Porwanie", price: 22500, lata: 40 },
+            { id: 32, category: 'ciezkie', name: "Pomoc w ucieczce", price: 9000, lata: 20 },
+            { id: 33, category: 'ciezkie', name: "Współudział w przestępstwie", price: 12625, lata: 25 },
+            { id: 34, category: 'ciezkie', name: "Prowokacja WSP/OCSO", price: 9500, lata: 10 },
+            { id: 35, category: 'ciezkie', name: "Próba napaści", price: 11000, lata: 10 },
+            { id: 36, category: 'ciezkie', name: "Podszywanie się pod FP", price: 11500, lata: 25 },
+            { id: 37, category: 'ciezkie', name: "Nękanie obywatela/obywatelki", price: 10000, lata: 25 },
+            { id: 38, category: 'ciezkie', name: "Terroryzm", price: 62550, lata: 100 },
+            { id: 39, category: 'ciezkie', name: "Napad na kasetke", price: 15500, lata: 20 },
+            { id: 40, category: 'ciezkie', name: "Napad na bank Fox Mountain Community Bank / Moat & Castle CREDIT UNION", price: 22500, lata: 40 },
+            { id: 41, category: 'ciezkie', name: "Napad na Fabryke", price: 21000, lata: 30 },
+            { id: 42, category: 'ciezkie', name: "Napad na Apartament / Motel / Dom", price: 22000, lata: 25 },
+            { id: 43, category: 'ciezkie', name: "Napad na Salon Samochodowy / Celestial / Ron Rivers Auto Group", price: 30000, lata: 35 },
+            { id: 44, category: 'ciezkie', name: "Napad na Więzienie (próba odbicia zatrzymanego)", price: 62500, lata: 75 },
+            { id: 45, category: 'ciezkie', name: "Napad na Greenville Town Hall", price: 33500, lata: 35 },
+            { id: 46, category: 'ciezkie', name: "Napad na Komende", price: 56500, lata: 65 },
+            { id: 47, category: 'ciezkie', name: "Rabunek Mieszkania / Domu", price: 12500, lata: 15 },
+            { id: 89, category: 'ciezkie', name: "Przerwanie konwoju PD", price: 8750, lata: 20 },
+            { id: 79, category: 'ciezkie', name: "Włamanie", price: 8500, lata: 20 },
+            { id: 80, category: 'ciezkie', name: "Napaśc z użyciem broni", price: 15500, lata: 40 },
+            { id: 90, category: 'ciezkie', name: "Próba odbicia z konwoju PD", price: 22500, lata: 40 },
+            { id: 91, category: 'ciezkie', name: "Ucieczka z konowju PD", price: 32500, lata: 50 },
+            { id: 92, category: 'ciezkie', name: "Pomoc w ucieczce z konwoju PD", price: 22500, lata: 40 },
+            { id: 93, category: 'ciezkie', name: "Próba włamania na Komende", price: 11500, lata: 20 },
+            { id: 94, category: 'ciezkie', name: "Włamanie na Komende", price: 16500, lata: 30 },
+            { id: 48, category: 'bron', name: "Posiadanie narkotyków miękkich (marichuana powyżej 5g)", price: 5750, lata: 10 },
+            { id: 49, category: 'bron', name: "Posiadanie narkotyków twardych (meta, koka)", price: 7500, lata: 10 },
+            { id: 50, category: 'bron', name: "Handel narkotykami miękkimi", price: 22000, lata: 25 },
+            { id: 51, category: 'bron', name: "Handel narkotykami twardymi", price: 29500, lata: 35 },
+            { id: 52, category: 'bron', name: "Posiadanie broni bez pozwolenia", price: 19250, lata: 20 },
+            { id: 53, category: 'bron', name: "Posiadanie rejstrowanej broni krótkiej", price: 9500, lata: 10 },
+            { id: 54, category: 'bron', name: "Posiadanie nielegalnej broni długiej (strzelby, PM-Y)", price: 27500, lata: 30 },
+            { id: 55, category: 'bron', name: "Handel bronią", price: 37500, lata: 55 },
+            { id: 56, category: 'bron', name: "Bezpodstawne użycie broni", price: 11000, lata: 25 },
+            { id: 63, category: 'bron', name: "Posiadanie broni kl. 3 (karabiny szturmowe, wyborowe)", price: 37500, lata: 35 },
+            { id: 113, category: 'bron', name: "Posiadanie broni kl. 4 (materiały wybuchowe)", price: 44500, lata: 55 },
+            { id: 57, category: 'sila', name: "Usiłowanie zabójstwa obywatela", price: 70500, lata: 110 },
+            { id: 58, category: 'sila', name: "Usiłowanie zabójstwa FP", price: 95000, lata: 190 },
+            { id: 59, category: 'sila', name: "Napaść na FP", price: 22750, lata: 35 },
+            { id: 60, category: 'sila', name: "Groźby karalne", price: 6750, lata: 10 },
+            { id: 61, category: 'sila', name: "Nieumyślne spowodowanie uszczerbku na zdrowiu", price: 12500, lata: 10 },
+            { id: 62, category: 'sila', name: "Naruszenie nietykalności cielestnej / Dóbr osobistych", price: 12500, lata: 10 },
+            { id: 64, category: 'sila', name: "Udział w bójce", price: 8500, lata: 0 },
+            { id: 65, category: 'sila', name: "Morderstwo", price: 125000, lata: 300 },
+            { id: 220, category: 'predkosc', name: "Przekroczenie do 6 MPH ponad limit", price: 500, lata: 0 },
+            { id: 221, category: 'predkosc', name: "Przekroczenie od 6 MPH do 10 MPH ponad limit", price: 1250, lata: 0 },
+            { id: 222, category: 'predkosc', name: "Przekroczenie od 11 MPH do 15 MPH ponad limit", price: 2250, lata: 0 },
+            { id: 223, category: 'predkosc', name: "Przekroczenie od 16 MPH do 20 MPH ponad limit", price: 3250, lata: 0 },
+            { id: 224, category: 'predkosc', name: "Przekroczenie od 21 MPH do 25 MPH ponad limit", price: 5250, lata: 0 },
+            { id: 225, category: 'predkosc', name: "Przekroczenie od 26 MPH do 30 MPH ponad limit", price: 7250, lata: 0 },
+            { id: 226, category: 'predkosc', name: "Przekroczenie od 31 MPH do 40 MPH ponad limit", price: 8250, lata: 0 },
+            { id: 227, category: 'predkosc', name: "Przekroczenie od 41 MPH ponad limit", price: 9250, lata: 0 },
+            { id: 228, category: 'predkosc', name: "Przekroczenie ponad 80 MPH + zabranie prawa jazdy", price: 10750, lata: 0 },
+        ];
+
+        const searchInput = document.getElementById('search-input');
+        let selectedChargeIds = [];
+
+        function renderCharges(filter = '') {
+            const lowerCaseFilter = filter.toLowerCase();
+            
+            allCharges.forEach(charge => {
+                const container = document.getElementById(`charges-${charge.category}`);
+                let chargeEl = document.getElementById(`charge-${charge.id}`);
+                const chargeMatches = charge.name.toLowerCase().includes(lowerCaseFilter);
+
+                if (chargeMatches) {
+                    if (!chargeEl) {
+                        chargeEl = document.createElement('div');
+                        chargeEl.id = `charge-${charge.id}`;
+                        chargeEl.className = 'flex items-center justify-between p-2 rounded-md hover:bg-gray-700 charge-item';
+                        container.appendChild(chargeEl);
+                    }
+                    chargeEl.style.display = 'flex';
+                } else if(chargeEl) {
+                    chargeEl.style.display = 'none';
+                }
+            });
+
+            updateButtons(selectedChargeIds);
+        }
+
+        function buildInitialCharges() {
+             allCharges.forEach(charge => {
+                const container = document.getElementById(`charges-${charge.category}`);
+                if (container) {
+                    const chargeEl = document.createElement('div');
+                    chargeEl.id = `charge-${charge.id}`;
+                    chargeEl.className = 'flex items-center justify-between p-2 rounded-md hover:bg-gray-700 charge-item';
+                    chargeEl.innerHTML = `
+                        <div>
+                            <p class="font-semibold">${charge.name}</p>
+                            <p class="text-sm text-gray-400">$${charge.price} | ${charge.lata} mies.</p>
+                        </div>
+                        <button data-id="${charge.id}" class="add-charge-btn bg-blue-600 hover:bg-blue-500 text-white font-bold p-2 rounded-full flex items-center justify-center">
+                            <i data-lucide="plus" class="w-4 h-4 pointer-events-none"></i>
+                        </button>
+                    `;
+                    container.appendChild(chargeEl);
+                }
+            });
+            lucide.createIcons();
+        }
+
+        function updateButtons(newSelectedChargeIds) {
+            selectedChargeIds = newSelectedChargeIds;
+            document.querySelectorAll('.add-charge-btn').forEach(button => {
+                const chargeId = parseInt(button.dataset.id, 10);
+                if (selectedChargeIds.includes(chargeId)) {
+                    button.disabled = true;
+                    button.classList.remove('bg-blue-600', 'hover:bg-blue-500');
+                    button.classList.add('bg-green-600');
+                    button.innerHTML = 'Dodano';
+                } else {
+                    button.disabled = false;
+                    button.classList.remove('bg-green-600');
+                    button.classList.add('bg-blue-600', 'hover:bg-blue-500');
+                    button.innerHTML = '<i data-lucide="plus" class="w-4 h-4 pointer-events-none"></i>';
+                }
+            });
+            lucide.createIcons();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            buildInitialCharges();
+            
+            document.getElementById('pricelist').addEventListener('click', (e) => {
+                const button = e.target.closest('.add-charge-btn');
+                if (button && !button.disabled) {
+                    const chargeId = parseInt(button.dataset.id, 10);
+                    const charge = allCharges.find(c => c.id === chargeId);
+                    if (charge && window.parent && typeof window.parent.addChargeToMandate === 'function') {
+                        window.parent.addChargeToMandate(charge);
+                    }
+                }
+            });
+
+            searchInput.addEventListener('input', (e) => renderCharges(e.target.value));
+        });
+
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'UPDATE_SELECTED_CHARGES' && Array.isArray(event.data.payload)) {
+                updateButtons(event.data.payload);
+            }
+        });
+
+    </script>
+</body>
+</html>
+

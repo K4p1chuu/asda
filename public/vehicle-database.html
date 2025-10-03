@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baza Danych Pojazdów - MDT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style> 
+        body { font-family: 'Inter', sans-serif; }
+        .sortable:hover { cursor: pointer; background-color: #374151; }
+        .modal-backdrop { display: none; }
+        .modal-backdrop.flex { display: flex; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex h-screen">
+
+    <aside id="sidebar-container" class="w-64 bg-gray-800 p-4 flex flex-col min-h-screen flex-shrink-0"></aside>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <h1 class="text-3xl font-bold text-white mb-6">Baza Danych Pojazdów</h1>
+        <div class="bg-gray-800 p-4 rounded-lg shadow-lg mb-6">
+            <div class="flex items-center space-x-4">
+                <input type="text" id="search-input" class="flex-grow bg-gray-700 border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Filtruj po numerze rejestracyjnym lub właścicielu...">
+            </div>
+        </div>
+
+        <div id="table-container" class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+             <div class="overflow-x-auto">
+                <table class="min-w-full text-sm text-left text-gray-300">
+                    <thead class="text-xs text-gray-400 uppercase bg-gray-700">
+                        <tr>
+                            <th class="px-6 py-3">Rejestracja</th>
+                            <th class="px-6 py-3">Właściciel</th>
+                            <th class="px-6 py-3">Status</th>
+                            <th id="sort-date" class="px-6 py-3 sortable">Data Ostatniego Badania <i data-lucide="arrow-down-up" class="inline w-3 h-3 ml-1"></i></th>
+                        </tr>
+                    </thead>
+                    <tbody id="vehicles-table-body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div id="message-container" class="text-center py-10"></div>
+    </main>
+
+    <div id="vehicle-details-modal" class="modal-backdrop fixed top-0 left-0 w-full h-full bg-black bg-opacity-70 z-50 justify-center items-center p-4">
+        <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl p-6 relative max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                 <h3 id="modal-plate" class="text-2xl font-bold text-white"></h3>
+                 <button id="edit-vehicle-btn" class="hidden bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Edytuj</button>
+            </div>
+            <div id="modal-content" class="flex-grow overflow-y-auto space-y-4 text-sm pr-4"></div>
+            <p id="edit-message" class="text-center h-4 mt-2"></p>
+            <div id="modal-actions" class="flex justify-end gap-4 mt-4">
+                 <button id="modal-close-button" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg">Zamknij</button>
+                 <button id="save-vehicle-btn" class="hidden bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Zapisz Zmiany</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="shared.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Funkcja loadSidebarAndUserData jest zdefiniowana w shared.js
+            // i zostanie wywołana, jeśli ten plik jest używany samodzielnie.
+            // Jeśli jest ładowany w CEPiKu, ta linia zostanie zastąpiona.
+            const userData = await loadSidebarAndUserData('vehicle-database');
+            
+            const token = localStorage.getItem('mdt-token');
+            const searchInput = document.getElementById('search-input');
+            const tableBody = document.getElementById('vehicles-table-body');
+            const messageContainer = document.getElementById('message-container');
+            const sortDateButton = document.getElementById('sort-date');
+            
+            const modal = document.getElementById('vehicle-details-modal');
+            const modalPlate = document.getElementById('modal-plate');
+            const modalContent = document.getElementById('modal-content');
+            const modalCloseButton = document.getElementById('modal-close-button');
+            const editVehicleBtn = document.getElementById('edit-vehicle-btn');
+            const saveVehicleBtn = document.getElementById('save-vehicle-btn');
+            const editMessage = document.getElementById('edit-message');
+
+            let allVehicles = [];
+            let dateSortDirection = 'desc'; 
+            let currentEditingPlate = null;
+
+            async function loadAndRenderVehicles() {
+                messageContainer.innerHTML = '<p class="text-gray-500">Ładowanie danych...</p>';
+                tableBody.innerHTML = '';
+                try {
+                    const response = await fetch('/api/vehicles', { headers: { 'Authorization': token } });
+                    if (!response.ok) throw new Error('Błąd odpowiedzi serwera');
+                    allVehicles = await response.json();
+                    renderTable();
+                } catch (error) {
+                    messageContainer.innerHTML = `<p class="text-red-500">Nie udało się załadować bazy pojazdów: ${error.message}</p>`;
+                }
+            }
+            
+            function renderTable() {
+                allVehicles.sort((a, b) => {
+                    const dateA = new Date(a.lastInspection);
+                    const dateB = new Date(b.lastInspection);
+                    return dateSortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+                });
+                
+                const filterText = searchInput.value.toLowerCase();
+                const filteredVehicles = allVehicles.filter(v => 
+                    v.plate.toLowerCase().includes(filterText) ||
+                    (v.ownerName && v.ownerName.toLowerCase().includes(filterText))
+                );
+
+                tableBody.innerHTML = ''; 
+                if (filteredVehicles.length === 0) {
+                    messageContainer.innerHTML = '<p class="text-gray-500">Brak pojazdów w bazie danych.</p>';
+                } else {
+                    messageContainer.innerHTML = '';
+                }
+
+                filteredVehicles.forEach(vehicle => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-700 cursor-pointer';
+                    row.dataset.plate = vehicle.plate;
+                    
+                    let statusClass = 'text-gray-400';
+                    let statusText = vehicle.status;
+                    if(vehicle.status && vehicle.status.includes('POZYTYWNY')) statusClass = 'text-green-400';
+                    if(vehicle.status && vehicle.status.includes('NEGATYWNY')) statusClass = 'text-red-400';
+                    if(vehicle.status && vehicle.status.includes('DEMONTAŻ')) statusClass = 'text-yellow-400';
+                    if(vehicle.isImpounded) {
+                        statusText = 'ZAREKWIROWANY';
+                        statusClass = 'text-yellow-400';
+                    }
+
+                    row.innerHTML = `
+                        <td class="px-6 py-4 font-mono text-blue-400">${vehicle.plate}</td>
+                        <td class="px-6 py-4">${vehicle.ownerName}</td>
+                        <td class="px-6 py-4 font-bold ${statusClass}">${statusText}</td>
+                        <td class="px-6 py-4">${vehicle.lastInspection ? new Date(vehicle.lastInspection).toLocaleString('pl-PL') : 'Brak danych'}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+                lucide.createIcons();
+            }
+
+            async function showVehicleDetails(plate) {
+                currentEditingPlate = plate;
+                const response = await fetch(`/api/vehicle/${plate}`, { headers: { 'Authorization': token }});
+                const data = await response.json();
+                
+                modalPlate.textContent = `Szczegóły pojazdu: ${data.plate}`;
+                
+                let historyHtml = '<h3>Historia Badań Technicznych</h3>';
+                data.inspections.forEach((insp, index) => {
+                    const canDelete = (userData && (userData.isAdmin || userData.badge === '101' || userData.rank === 'Superintendent'));
+                    const deleteButton = canDelete ? `<button data-plate="${plate}" data-index="${index}" class="delete-inspection-btn text-red-500 hover:text-red-400 p-1"><i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i></button>` : '';
+
+                    historyHtml += `
+                        <div class="mt-4 bg-gray-900 p-3 rounded-lg">
+                            <div class="flex justify-between items-center">
+                                <p class="text-sm font-semibold text-gray-400">${new Date(insp.date).toLocaleString('pl-PL')}</p>
+                                ${deleteButton}
+                            </div>
+                            <pre class="whitespace-pre-wrap font-mono text-xs mt-2">${insp.content}</pre>
+                        </div>
+                    `;
+                });
+
+                modalContent.innerHTML = historyHtml;
+                
+                if (window.isCepilLead) {
+                    editVehicleBtn.classList.remove('hidden');
+                } else {
+                    editVehicleBtn.classList.add('hidden');
+                }
+                
+                lucide.createIcons();
+                modal.classList.add('flex');
+            }
+
+            editVehicleBtn.addEventListener('click', () => {
+                 modalContent.innerHTML = `<p class="text-gray-400">Edycja jest w trakcie implementacji.</p>`; // Placeholder
+                 editVehicleBtn.classList.add('hidden');
+                 saveVehicleBtn.classList.remove('hidden');
+            });
+            
+            saveVehicleBtn.addEventListener('click', async () => {
+                editMessage.textContent = "Funkcjonalność w trakcie implementacji.";
+                setTimeout(() => editMessage.textContent = "", 3000);
+            });
+            
+            modalContent.addEventListener('click', async (e) => {
+                const deleteBtn = e.target.closest('.delete-inspection-btn');
+                if (deleteBtn) {
+                    const plate = deleteBtn.dataset.plate;
+                    const index = deleteBtn.dataset.index;
+                    if (confirm('Czy na pewno chcesz usunąć ten przegląd? Tej akcji nie można cofnąć.')) {
+                        try {
+                            const response = await fetch(`/api/vehicles/${plate}/inspections/${index}`, {
+                                method: 'DELETE',
+                                headers: { 'Authorization': token }
+                            });
+                            if (!response.ok) {
+                                const err = await response.json();
+                                throw new Error(err.message || 'Błąd serwera');
+                            }
+                            await showVehicleDetails(plate); 
+                            await loadAndRenderVehicles(); 
+                        } catch (error) {
+                            alert(`Błąd usuwania: ${error.message}`);
+                        }
+                    }
+                }
+            });
+
+            searchInput.addEventListener('input', renderTable);
+            sortDateButton.addEventListener('click', () => {
+                dateSortDirection = dateSortDirection === 'asc' ? 'desc' : 'asc';
+                renderTable();
+            });
+            
+            tableBody.addEventListener('click', (e) => {
+                const row = e.target.closest('tr');
+                if (row && row.dataset.plate) {
+                    showVehicleDetails(row.dataset.plate);
+                }
+            });
+            
+            modalCloseButton.addEventListener('click', () => {
+                modal.classList.remove('flex');
+                saveVehicleBtn.classList.add('hidden');
+                editVehicleBtn.classList.remove('hidden');
+            });
+
+            loadAndRenderVehicles();
+        });
+    </script>
+</body>
+</html>

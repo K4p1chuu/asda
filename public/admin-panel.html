@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Administratora - MDT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .modal-backdrop { display: none; }
+        .modal-backdrop.flex { display: flex; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex h-screen">
+
+    <aside id="sidebar-container" class="w-64 bg-gray-800 p-4 flex flex-col min-h-screen flex-shrink-0"></aside>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <div id="admin-content">
+            <h1 class="text-3xl font-bold text-white mb-6">Zarządzanie MDT</h1>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="space-y-6">
+                    <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                        <h2 class="text-xl font-semibold text-white mb-4">Zarządzanie Funkcjonariuszami</h2>
+                        <button id="add-user-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center">
+                            <i data-lucide="user-plus" class="w-5 h-5 mr-2"></i>Dodaj Funkcjonariusza
+                        </button>
+                    </div>
+
+                    <div id="add-user-form-container" class="hidden bg-gray-800 p-6 rounded-lg shadow-lg">
+                        <h2 class="text-xl font-semibold text-white mb-4">Nowy Funkcjonariusz</h2>
+                        <form id="add-user-form" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <input type="email" name="email" placeholder="Email (do logowania)" class="bg-gray-700 rounded p-2" required>
+                                <input type="text" name="username" placeholder="Imię i Nazwisko" class="bg-gray-700 rounded p-2" required>
+                                <input type="password" name="password" placeholder="Hasło" class="bg-gray-700 rounded p-2" required>
+                                <input type="text" name="badge" placeholder="Odznaka" class="bg-gray-700 rounded p-2" required>
+                                <input type="text" name="robloxId" placeholder="ID Gracza (Roblox)" class="bg-gray-700 rounded p-2" required>
+                                <input type="text" name="discordNick" placeholder="Nick Discord" class="bg-gray-700 rounded p-2" required>
+                                <input type="text" name="robloxNick" placeholder="Nick Roblox" class="bg-gray-700 rounded p-2" required>
+                                <input type="date" name="joinedAt" title="Data dołączenia" class="bg-gray-700 rounded p-2" required>
+                                <select name="department" id="add-department-select" class="bg-gray-700 rounded p-2" required>
+                                    <option value="">Wybierz departament...</option>
+                                    <option value="WSP">WSP</option>
+                                    <option value="OCSO">OCSO</option>
+                                </select>
+                                <select name="rank" id="add-rank-select" class="bg-gray-700 rounded p-2" required>
+                                    <option value="">Najpierw wybierz departament</option>
+                                </select>
+                                <select name="isAdmin" class="bg-gray-700 rounded p-2 md:col-span-2">
+                                    <option value="false">Użytkownik</option>
+                                    <option value="true">Administrator</option>
+                                </select>
+                            </div>
+                            <div class="flex justify-end gap-4">
+                                <button type="button" id="cancel-add-user" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg">Anuluj</button>
+                                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Zapisz</button>
+                            </div>
+                        </form>
+                        <p id="add-user-message" class="text-center mt-4 h-4"></p>
+                    </div>
+                     <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                        <h2 class="text-xl font-semibold text-white mb-4">Ewidencja Diagnostów</h2>
+                        <form id="add-diagnostician-form" class="space-y-3">
+                            <input type="email" name="email" placeholder="Email (do logowania)" class="w-full bg-gray-700 rounded p-2 text-sm" required>
+                            <input type="password" name="password" placeholder="Hasło" class="w-full bg-gray-700 rounded p-2 text-sm" required>
+                            <input type="text" name="discordNick" placeholder="Nick Discord" class="w-full bg-gray-700 rounded p-2 text-sm" required>
+                            <input type="text" name="robloxNick" placeholder="Nick Roblox" class="w-full bg-gray-700 rounded p-2 text-sm" required>
+                            <input type="text" name="discordId" placeholder="ID Discord" class="w-full bg-gray-700 rounded p-2 text-sm" required>
+                            <input type="text" name="skpNumber" placeholder="Numer SKP (np. GVW/01/123)" class="w-full bg-gray-700 rounded p-2 text-sm" required>
+                            <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg">Dodaj Diagnostę</button>
+                        </form>
+                        <p id="diagnostician-message" class="text-center h-4 mt-2"></p>
+                        <div class="mt-4 overflow-auto max-h-48">
+                            <table class="min-w-full text-sm text-left text-gray-300">
+                                <thead class="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
+                                    <tr>
+                                        <th class="px-4 py-2">Nick</th>
+                                        <th class="px-4 py-2">Numer SKP</th>
+                                        <th class="px-4 py-2 text-right">Akcje</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="diagnosticians-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                        <h2 class="text-xl font-semibold text-white mb-4">Lista Funkcjonariuszy WSP</h2>
+                        <div class="overflow-auto max-h-60">
+                            <table class="min-w-full text-sm text-left text-gray-300">
+                                <thead class="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
+                                    <tr>
+                                        <th class="px-6 py-3">Nazwa</th><th class="px-6 py-3">Ranga</th><th class="px-6 py-3 text-right">Akcje</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="wsp-users-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                     <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                        <h2 class="text-xl font-semibold text-white mb-4">Lista Funkcjonariuszy OCSO</h2>
+                        <div class="overflow-auto max-h-60">
+                            <table class="min-w-full text-sm text-left text-gray-300">
+                                <thead class="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
+                                    <tr>
+                                        <th class="px-6 py-3">Nazwa</th><th class="px-6 py-3">Ranga</th><th class="px-6 py-3 text-right">Akcje</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ocso-users-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                        <h2 class="text-xl font-semibold text-white mb-4">Zarządzanie Ogłoszeniami</h2>
+                        <form id="announcement-form" class="space-y-3">
+                             <input type="text" id="announcement-title" placeholder="Tytuł ogłoszenia" class="w-full bg-gray-700 rounded p-2" required>
+                             <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-lg">Dodaj Ogłoszenie</button>
+                        </form>
+                    </div>
+                    <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                        <h2 class="text-xl font-semibold text-white mb-4">Aktualne Ogłoszenia</h2>
+                        <div id="announcements-list" class="overflow-auto max-h-96 space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="edit-user-modal" class="modal-backdrop fixed top-0 left-0 w-full h-full bg-black bg-opacity-70 z-50 justify-center items-center">
+         <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6 relative">
+            <h3 class="text-lg font-medium leading-6 text-white mb-4">Edytuj Funkcjonariusza</h3>
+            <form id="edit-user-form" class="space-y-4">
+                <input type="hidden" id="editUserOriginalEmail">
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-sm font-medium text-gray-400">Imię i Nazwisko</label>
+                        <input type="text" id="editUserName" name="username" class="w-full bg-gray-700 rounded p-2 mt-1" required>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-400">Email (logowanie)</label>
+                        <input type="email" id="editUserEmail" name="newEmail" class="w-full bg-gray-700 rounded p-2 mt-1" required>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="text-sm font-medium text-gray-400">Nowe hasło</label>
+                        <input type="password" id="editUserPassword" name="password" class="w-full bg-gray-700 rounded p-2 mt-1" placeholder="Zostaw puste, by nie zmieniać">
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-400">Departament</label>
+                        <select id="editUserDepartment" name="department" class="w-full bg-gray-700 rounded p-2 mt-1" required>
+                            <option value="WSP">WSP</option>
+                            <option value="OCSO">OCSO</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-400">Ranga</label>
+                        <select id="editUserRank" name="rank" class="w-full bg-gray-700 rounded p-2 mt-1" required></select>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-400">Odznaka</label>
+                        <input type="text" id="editUserBadge" name="badge" class="w-full bg-gray-700 rounded p-2 mt-1" required>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-400">ID Gracza (Roblox)</label>
+                        <input type="text" id="editUserRobloxId" name="robloxId" class="w-full bg-gray-700 rounded p-2 mt-1" required>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-400">Nick Discord</label>
+                        <input type="text" id="editUserDiscordNick" name="discordNick" class="w-full bg-gray-700 rounded p-2 mt-1" required>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-400">Nick Roblox</label>
+                        <input type="text" id="editUserRobloxNick" name="robloxNick" class="w-full bg-gray-700 rounded p-2 mt-1" required>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="text-sm font-medium text-gray-400">Data dołączenia</label>
+                        <input type="date" id="editUserJoinedAt" name="joinedAt" class="w-full bg-gray-700 rounded p-2 mt-1" required>
+                    </div>
+                </div>
+                <p id="edit-user-message" class="text-center h-4"></p>
+                <div class="flex justify-end gap-4 pt-4">
+                    <button type="button" id="edit-cancel-button" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg">Anuluj</button>
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Zapisz Zmiany</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="confirm-modal" class="modal-backdrop fixed top-0 left-0 w-full h-full bg-black bg-opacity-70 z-50 justify-center items-center">
+        <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6 relative">
+            <h3 id="confirm-modal-title" class="text-lg font-medium leading-6 text-white">Potwierdź akcję</h3>
+            <p id="confirm-modal-text" class="mt-2 text-sm text-gray-400">Czy na pewno chcesz kontynuować?</p>
+            <div class="mt-6 flex justify-end space-x-4">
+                <button type="button" id="confirm-cancel-button" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg">Anuluj</button>
+                <button type="button" id="confirm-danger-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">Potwierdź</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const userData = await loadSidebarAndUserData('admin-panel');
+        if(!userData || !userData.isAdmin) {
+             // Zezwól na dostęp dla seniorów, ale schowaj niektóre elementy
+            if (userData.badge !== '101' && userData.rank !== 'Superintendent' && userData.rank !== 'Sheriff') {
+                 document.getElementById('admin-content').innerHTML = '<h1 class="text-3xl font-bold text-red-500">Brak uprawnień do tej strony.</h1>';
+                return;
+            }
+        }
+        
+        const token = localStorage.getItem('mdt-token');
+        const canEdit = userData.isAdmin || userData.badge === '101' || userData.rank === 'Superintendent' || userData.rank === 'Sheriff';
+        const canDelete = userData.isAdmin;
+
+        if (!canDelete) {
+            // Ukryj elementy dostępne tylko dla admina
+            document.getElementById('add-user-button').parentElement.style.display = 'none';
+            document.getElementById('add-diagnostician-form').parentElement.style.display = 'none';
+            document.getElementById('announcement-form').parentElement.style.display = 'none';
+        }
+
+
+        const RANKS = {
+            WSP: [ 'Superintendent', 'Deputy Chief Superintendent', 'Colonel', 'Lieutenant Colonel', 'Major', 'Captain', 'Lieutenant', 'Sergeant', 'Master Trooper', 'Trooper First Class', 'Trooper', 'Probationary Trooper' ],
+            OCSO: [ 'Sheriff', 'Undersheriff', 'Colonel', 'Major', 'Captain', 'Lieutenant Colonel', 'Lieutenant', 'Staff Sergeant', 'Sergeant', 'Corporal', 'Deputy', 'Probationary Deputy' ]
+        };
+
+        const wspTableBody = document.getElementById('wsp-users-table-body');
+        const ocsoTableBody = document.getElementById('ocso-users-table-body');
+        
+        const addUserFormContainer = document.getElementById('add-user-form-container');
+        const addUserForm = document.getElementById('add-user-form');
+        const addUserMessage = document.getElementById('add-user-message');
+        const addDepartmentSelect = document.getElementById('add-department-select');
+        const addRankSelect = document.getElementById('add-rank-select');
+        
+        const editUserModal = document.getElementById('edit-user-modal');
+        const editUserForm = document.getElementById('edit-user-form');
+        const editUserDepartmentSelect = document.getElementById('editUserDepartment');
+        const editUserRankSelect = document.getElementById('editUserRank');
+        
+        const addUserButton = document.getElementById('add-user-button');
+        const cancelAddUserButton = document.getElementById('cancel-add-user');
+        const cancelEditButton = document.getElementById('edit-cancel-button');
+        const editUserMessage = document.getElementById('edit-user-message');
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmModalText = document.getElementById('confirm-modal-text');
+        const confirmCancelButton = document.getElementById('confirm-cancel-button');
+        const confirmDangerButton = document.getElementById('confirm-danger-button');
+        let actionToConfirm = null;
+
+        const announcementForm = document.getElementById('announcement-form');
+        const announcementTitleInput = document.getElementById('announcement-title');
+        const announcementsList = document.getElementById('announcements-list');
+        
+        const diagnosticianForm = document.getElementById('add-diagnostician-form');
+        const diagnosticianMessage = document.getElementById('diagnostician-message');
+        const diagnosticiansTableBody = document.getElementById('diagnosticians-table-body');
+
+        function populateRankSelect(selectElement, department) {
+            const ranks = RANKS[department] || [];
+            let optionsHtml = '<option value="">Wybierz rangę...</option>';
+            ranks.forEach(rank => { optionsHtml += `<option value="${rank}">${rank}</option>`; });
+            selectElement.innerHTML = optionsHtml;
+        }
+        
+        addDepartmentSelect.addEventListener('change', () => populateRankSelect(addRankSelect, addDepartmentSelect.value));
+        editUserDepartmentSelect.addEventListener('change', () => populateRankSelect(editUserRankSelect, editUserDepartmentSelect.value));
+
+        async function fetchUsers() {
+            try {
+                const response = await fetch('/api/officers', { headers: { 'Authorization': token } });
+                const users = await response.json();
+                wspTableBody.innerHTML = ''; 
+                ocsoTableBody.innerHTML = ''; 
+                
+                users.filter(u => u.username !== 'Administrator').forEach(user => {
+                    const targetTableBody = user.department === 'WSP' ? wspTableBody : (user.department === 'OCSO' ? ocsoTableBody : wspTableBody);
+                    const row = document.createElement('tr');
+                    
+                    let buttonsHtml = '';
+                    if (canEdit) {
+                        buttonsHtml += `<button data-user='${JSON.stringify(user)}' class="edit-btn font-medium text-blue-400 hover:underline">Edytuj</button>`;
+                    }
+                    if (canDelete) {
+                         buttonsHtml += `<button data-email="${user.email}" class="delete-btn font-medium text-red-500 hover:underline">Usuń</button>`;
+                    }
+
+                    row.className = 'hover:bg-gray-700';
+                    row.innerHTML = `
+                        <td class="px-6 py-4 font-medium text-white">${user.username}</td>
+                        <td class="px-6 py-4">${user.rank}</td>
+                        <td class="px-6 py-4 text-right space-x-2">${buttonsHtml}</td>`;
+                    targetTableBody.appendChild(row);
+                });
+            } catch(e) { console.error("Błąd pobierania funkcjonariuszy:", e); }
+        }
+
+        function showConfirmModal(text, onConfirm) {
+            confirmModalText.textContent = text;
+            actionToConfirm = onConfirm;
+            confirmModal.classList.add('flex');
+        }
+
+        confirmCancelButton.addEventListener('click', () => {
+            confirmModal.classList.remove('flex');
+            actionToConfirm = null;
+        });
+
+        confirmDangerButton.addEventListener('click', () => {
+            if (typeof actionToConfirm === 'function') {
+                actionToConfirm();
+            }
+            confirmModal.classList.remove('flex');
+            actionToConfirm = null;
+        });
+        
+        addUserButton.addEventListener('click', () => addUserFormContainer.classList.remove('hidden'));
+        cancelAddUserButton.addEventListener('click', () => addUserFormContainer.classList.add('hidden'));
+
+        addUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            addUserMessage.textContent = 'Dodawanie...';
+            const formData = new FormData(addUserForm);
+            const newUser = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/api/officers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': token },
+                    body: JSON.stringify(newUser)
+                });
+                const data = await response.json();
+                if(!response.ok) throw new Error(data.message || 'Błąd serwera');
+
+                addUserMessage.textContent = 'Dodano pomyślnie!';
+                setTimeout(() => {
+                   addUserFormContainer.classList.add('hidden');
+                   addUserForm.reset();
+                   addUserMessage.textContent = '';
+                   fetchUsers();
+                }, 1500);
+            } catch(error) { addUserMessage.textContent = `Błąd: ${error.message}`; }
+        });
+
+        document.querySelector('main').addEventListener('click', (e) => {
+            const deleteBtn = e.target.closest('.delete-btn');
+            const editBtn = e.target.closest('.edit-btn');
+
+            if (deleteBtn) {
+                const email = deleteBtn.dataset.email;
+                showConfirmModal(`Czy na pewno chcesz usunąć funkcjonariusza ${email}?`, async () => {
+                    try {
+                        const response = await fetch(`/api/officers/${encodeURIComponent(email)}`, { method: 'DELETE', headers: { 'Authorization': token } });
+                        if (!response.ok) {
+                           const err = await response.json();
+                           throw new Error(err.message || 'Błąd serwera');
+                        }
+                        await fetchUsers();
+                    } catch (error) {
+                        addUserMessage.textContent = `Błąd: ${error.message}`;
+                        setTimeout(() => addUserMessage.textContent = '', 4000);
+                    }
+                });
+            }
+            
+            if (editBtn) {
+                const user = JSON.parse(editBtn.dataset.user);
+                document.getElementById('editUserOriginalEmail').value = user.email;
+                document.getElementById('editUserName').value = user.username;
+                document.getElementById('editUserEmail').value = user.email;
+                document.getElementById('editUserPassword').value = '';
+
+                editUserDepartmentSelect.value = user.department;
+                populateRankSelect(editUserRankSelect, user.department);
+                editUserRankSelect.value = user.rank;
+                
+                document.getElementById('editUserBadge').value = user.badge;
+                document.getElementById('editUserRobloxId').value = user.robloxId || '';
+                document.getElementById('editUserDiscordNick').value = user.discordNick || '';
+                document.getElementById('editUserRobloxNick').value = user.robloxNick || '';
+                const joinDate = user.joinedAt ? new Date(user.joinedAt).toISOString().split('T')[0] : '';
+                document.getElementById('editUserJoinedAt').value = joinDate;
+                editUserModal.classList.add('flex');
+            }
+        });
+        
+        cancelEditButton.addEventListener('click', () => editUserModal.classList.remove('flex'));
+        editUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            editUserMessage.textContent = 'Zapisywanie...';
+            const originalEmail = document.getElementById('editUserOriginalEmail').value;
+            const password = document.getElementById('editUserPassword').value;
+            const updatedData = {
+                username: document.getElementById('editUserName').value,
+                newEmail: document.getElementById('editUserEmail').value,
+                badge: document.getElementById('editUserBadge').value,
+                rank: document.getElementById('editUserRank').value,
+                department: document.getElementById('editUserDepartment').value,
+                robloxId: document.getElementById('editUserRobloxId').value,
+                discordNick: document.getElementById('editUserDiscordNick').value,
+                robloxNick: document.getElementById('editUserRobloxNick').value,
+                joinedAt: document.getElementById('editUserJoinedAt').value,
+            };
+            if (password) {
+                updatedData.password = password;
+            }
+
+            try {
+                 const response = await fetch(`/api/officers/${encodeURIComponent(originalEmail)}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': token },
+                    body: JSON.stringify(updatedData)
+                 });
+                 if(!response.ok) {
+                     const err = await response.json();
+                     throw new Error(err.message || 'Błąd serwera');
+                 }
+                 editUserMessage.textContent = 'Zapisano!';
+                 setTimeout(() => {
+                    editUserModal.classList.remove('flex');
+                    editUserMessage.textContent = '';
+                    fetchUsers();
+                 }, 1500);
+            } catch (error) { 
+                editUserMessage.textContent = `Błąd: ${error.message}`;
+            }
+        });
+        
+        async function fetchAnnouncements() {
+            const response = await fetch('/api/announcements', { headers: { 'Authorization': token } });
+            const data = await response.json();
+            announcementsList.innerHTML = data.length > 0 ? data.map(a => `
+                <div class="bg-gray-900 p-2 rounded-md flex justify-between items-center">
+                    <div><p class="font-semibold">${a.title}</p><p class="text-xs text-gray-400">Przez: ${a.author}</p></div>
+                    ${ canDelete ? `<button data-id="${a.id}" class="delete-announcement-btn text-red-500 hover:text-red-400 p-1"><i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i></button>` : '' }
+                </div>
+            `).join('') : '<p class="text-gray-500">Brak ogłoszeń.</p>';
+            lucide.createIcons();
+        }
+
+        announcementForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = announcementTitleInput.value.trim();
+            if (title) {
+                await fetch('/api/announcements', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': token },
+                    body: JSON.stringify({ title })
+                });
+                announcementTitleInput.value = '';
+                fetchAnnouncements();
+            }
+        });
+
+        announcementsList.addEventListener('click', (e) => {
+            const deleteBtn = e.target.closest('.delete-announcement-btn');
+            if (deleteBtn) {
+                showConfirmModal('Czy na pewno chcesz usunąć to ogłoszenie?', () => {
+                    fetch(`/api/announcements/${deleteBtn.dataset.id}`, { method: 'DELETE', headers: { 'Authorization': token } })
+                    .then(() => fetchAnnouncements());
+                });
+            }
+        });
+        
+        async function fetchDiagnosticians() {
+            try {
+                const response = await fetch('/api/diagnosticians', { headers: { 'Authorization': token } });
+                const diagnosticians = await response.json();
+                diagnosticiansTableBody.innerHTML = ''; 
+                diagnosticians.forEach(d => {
+                    const row = document.createElement('tr');
+                    let deleteButton = canDelete ? `<button data-id="${d.id}" class="delete-diagnostician-btn text-red-500 hover:underline">Usuń</button>` : '';
+                    row.className = 'hover:bg-gray-700';
+                    row.innerHTML = `
+                        <td class="px-4 py-2">${d.discordNick}</td>
+                        <td class="px-4 py-2 font-mono">${d.skpNumber}</td>
+                        <td class="px-4 py-2 text-right">${deleteButton}</td>`;
+                    diagnosticiansTableBody.appendChild(row);
+                });
+            } catch(e) { console.error("Błąd pobierania diagnostów:", e); }
+        }
+
+        diagnosticianForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            diagnosticianMessage.textContent = 'Dodawanie...';
+            const formData = new FormData(diagnosticianForm);
+            const newDiagnostician = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/api/diagnosticians', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': token },
+                    body: JSON.stringify(newDiagnostician)
+                });
+                const data = await response.json();
+                if(!response.ok) throw new Error(data.message || 'Błąd serwera');
+
+                diagnosticianMessage.textContent = 'Dodano pomyślnie!';
+                diagnosticianForm.reset();
+                fetchDiagnosticians();
+                setTimeout(() => { diagnosticianMessage.textContent = ''; }, 2000);
+            } catch(error) { diagnosticianMessage.textContent = `Błąd: ${error.message}`; }
+        });
+
+        diagnosticiansTableBody.addEventListener('click', (e) => {
+            if (e.target.classList.contains('delete-diagnostician-btn')) {
+                const id = e.target.dataset.id;
+                showConfirmModal('Czy na pewno chcesz usunąć tego diagnostę?', () => {
+                    fetch(`/api/diagnosticians/${id}`, { method: 'DELETE', headers: { 'Authorization': token } })
+                    .then(res => {
+                        if (res.ok) fetchDiagnosticians();
+                        else alert('Błąd podczas usuwania.');
+                    });
+                });
+            }
+        });
+
+        fetchUsers();
+        fetchAnnouncements();
+        fetchDiagnosticians();
+    });
+    </script>
+</body>
+</html>

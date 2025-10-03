@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wystaw Areszt - MDT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style> 
+        body { font-family: 'Inter', sans-serif; } 
+        #buyout-months:disabled { background-color: #4b5563; cursor: not-allowed; }
+        #paste-image-area {
+            border: 2px dashed #4b5563;
+            min-height: 150px;
+            background-size: cover;
+            background-position: center;
+        }
+        .autocomplete-suggestions { max-height: 150px; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex h-screen">
+
+    <aside id="sidebar-container" class="w-64 bg-gray-800 p-4 flex flex-col min-h-screen flex-shrink-0"></aside>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <h1 class="text-3xl font-bold text-white mb-6 flex items-center">
+             <i data-lucide="grid-3x3" class="w-10 h-10 mr-4 text-red-500"></i>
+            Nowy Raport Aresztowania
+        </h1>
+        <form id="arrest-form" class="space-y-6 bg-gray-800 p-6 rounded-lg shadow-lg">
+            
+            <fieldset class="border-b border-gray-700 pb-4">
+                <legend class="text-lg font-semibold text-white">Dane Funkcjonariusza</legend>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400">Departament</label>
+                        <input type="text" id="officerDepartment" class="mt-1 block w-full bg-gray-600 rounded-md p-2 cursor-not-allowed" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400">Odznaka</label>
+                        <input type="text" id="officerBadge" class="mt-1 block w-full bg-gray-600 rounded-md p-2 cursor-not-allowed" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400">Stopień</label>
+                        <input type="text" id="officerRank" class="mt-1 block w-full bg-gray-600 rounded-md p-2 cursor-not-allowed" readonly>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="border-b border-gray-700 pb-4">
+                <legend class="text-lg font-semibold text-white">Dane Zatrzymanego</legend>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                     <div class="relative">
+                        <label for="civilianDiscordId" class="block text-sm font-medium text-gray-400">Ping osoby zatrzymanej (ID)</label>
+                         <input type="text" id="civilianDiscordId" class="mt-1 block w-full bg-gray-700 rounded-md p-2" required placeholder="Zacznij pisać, aby wyszukać...">
+                         <div class="autocomplete-suggestions absolute w-full bg-gray-600 rounded-b-md overflow-y-auto z-10 border-t border-gray-500 hidden"></div>
+                    </div>
+                     <div>
+                        <label for="civilianFullName" class="block text-sm font-medium text-gray-400">Imię i Nazwisko</label>
+                        <input type="text" id="civilianFullName" class="mt-1 block w-full bg-gray-700 rounded-md p-2" required>
+                    </div>
+                    <div>
+                        <label for="civilianAge" class="block text-sm font-medium text-gray-400">Wiek</label>
+                        <input type="number" id="civilianAge" class="mt-1 block w-full bg-gray-700 rounded-md p-2" required>
+                    </div>
+                    <div>
+                        <label for="civilianGender" class="block text-sm font-medium text-gray-400">Płeć</label>
+                        <select id="civilianGender" class="mt-1 block w-full bg-gray-700 rounded-md p-2">
+                            <option>M</option>
+                            <option>K</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                         <label for="confiscatedItems" class="block text-sm font-medium text-gray-400">Zarekwirowane Przedmioty</label>
+                        <textarea id="confiscatedItems" rows="2" class="mt-1 block w-full bg-gray-700 rounded-md p-2" placeholder="np. 1x Nóż, 1x Pistolet (S/N: 12345)"></textarea>
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Zdjęcie</label>
+                        <div id="paste-image-area" class="w-full bg-gray-900 rounded-lg flex items-center justify-center text-gray-500 transition-all">
+                           <span>Wklej zdjęcie tutaj (Ctrl+V)</span>
+                        </div>
+                        <input type="hidden" id="photoUrl">
+                    </div>
+                </div>
+            </fieldset>
+            
+            <fieldset>
+                <legend class="text-lg font-semibold text-white">Szczegóły Aresztu</legend>
+                 <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div>
+                         <label for="arrestLocation" class="block text-sm font-medium text-gray-400">Gdzie został aresztowany</label>
+                         <input type="text" id="arrestLocation" class="mt-1 block w-full bg-gray-700 rounded-md p-2" required>
+                     </div>
+                     <div>
+                        <label for="jailLocation" class="block text-sm font-medium text-gray-400">Miejsce odsiadki</label>
+                        <select id="jailLocation" class="mt-1 block w-full bg-gray-700 rounded-md p-2">
+                            <option>WSP</option>
+                            <option>OCSO</option>
+                        </select>
+                    </div>
+                 </div>
+                 <div class="mt-4">
+                    <h3 class="text-md font-medium text-gray-300">Wybrane zarzuty:</h3>
+                    <ul id="selected-charges" class="mt-2 space-y-2 text-sm">
+                        <li class="text-gray-500">Wybierz zarzuty z taryfikatora poniżej.</li>
+                    </ul>
+                </div>
+
+                <div id="buyout-section" class="mt-6 p-4 bg-gray-900 rounded-lg">
+                    <label for="buyout-months" class="block text-sm font-medium text-gray-400">Wykup miesięcy (1 mies. = $1000, max 30)</label>
+                    <input type="number" id="buyout-months" value="0" min="0" max="30" class="mt-1 block w-full bg-gray-700 rounded-md p-2">
+                </div>
+
+                <div class="mt-6 flex justify-end items-center space-x-6 bg-gray-900 p-4 rounded-b-lg text-right">
+                    <div>
+                        <p class="text-gray-400 text-sm">Grzywna</p>
+                        <p id="final-fine" class="text-2xl font-bold text-green-400">$0</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Ostateczny wyrok</p>
+                        <p id="final-sentence" class="text-2xl font-bold text-red-400">0 minut</p>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend class="text-lg font-semibold text-white">Taryfikator</legend>
+                <iframe id="taryfikator-iframe" src="taryfikator.html" class="w-full mt-4 border-0 rounded-md" style="height: 60vh;"></iframe>
+            </fieldset>
+
+            <div id="form-message" class="text-center h-4"></div>
+            
+            <div class="flex justify-end pt-4">
+                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                    <i data-lucide="send" class="w-5 h-5 mr-2"></i>
+                    Wystaw Raport Aresztowania
+                </button>
+            </div>
+        </form>
+    </main>
+    
+    <script src="shared.js"></script>
+    <script>
+        let currentArrestCharges = [];
+        let allCitizens = [];
+        const IMGUR_CLIENT_ID = '546c25a59c58ad7';
+        
+        function addChargeToMandate(charge) {
+             if (!currentArrestCharges.some(c => c.id === charge.id)) {
+                currentArrestCharges.push(charge);
+                renderSelectedCharges();
+            }
+        }
+            
+        function renderSelectedCharges() {
+            const selectedChargesList = document.getElementById('selected-charges');
+            const finalSentenceEl = document.getElementById('final-sentence');
+            const finalFineEl = document.getElementById('final-fine');
+            const buyoutInput = document.getElementById('buyout-months');
+            const buyoutSectionLabel = document.querySelector('#buyout-section label');
+            
+            let totalMonths = currentArrestCharges.reduce((sum, charge) => sum + charge.lata, 0);
+            let totalFineFromCharges = currentArrestCharges.reduce((sum, charge) => sum + charge.price, 0);
+
+            if (totalMonths > 99) {
+                buyoutInput.disabled = true;
+                buyoutInput.value = 0;
+                buyoutSectionLabel.textContent = 'Wykup niemożliwy (wyrok > 99 miesięcy)';
+                buyoutSectionLabel.classList.add('text-red-500');
+            } else {
+                buyoutInput.disabled = false;
+                buyoutSectionLabel.textContent = 'Wykup miesięcy (1 mies. = $1000, max 30)';
+                buyoutSectionLabel.classList.remove('text-red-500');
+            }
+
+            selectedChargesList.innerHTML = '';
+            if (currentArrestCharges.length === 0) {
+                selectedChargesList.innerHTML = '<li class="text-gray-500">Wybierz zarzuty z taryfikatora.</li>';
+            } else {
+                currentArrestCharges.forEach((charge) => {
+                    const li = document.createElement('li');
+                    li.className = 'flex justify-between items-center bg-gray-700 p-2 rounded';
+                    li.innerHTML = `
+                        <span>${charge.name}</span>
+                        <div class="flex items-center">
+                            <span class="font-semibold mr-4">${charge.lata} mies. / $${charge.price}</span>
+                            <button type="button" data-id="${charge.id}" class="remove-charge-btn text-red-500 hover:text-red-400 p-1 rounded-full"><i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i></button>
+                        </div>
+                    `;
+                    selectedChargesList.appendChild(li);
+                });
+                lucide.createIcons();
+            }
+            
+            const buyoutMonths = parseInt(buyoutInput.value, 10) || 0;
+            const buyoutFine = buyoutMonths * 1000;
+            const finalTotalFine = totalFineFromCharges + buyoutFine;
+            const finalSentence = Math.max(0, totalMonths - buyoutMonths);
+
+            finalSentenceEl.textContent = `${finalSentence} minut`;
+            finalFineEl.textContent = `$${finalTotalFine}`;
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const userData = await loadSidebarAndUserData('arrest-form');
+            if(!userData) return;
+            
+            document.getElementById('officerBadge').value = userData.badge;
+            document.getElementById('officerRank').value = userData.rank;
+            document.getElementById('officerDepartment').value = userData.department;
+
+            const token = localStorage.getItem('mdt-token');
+             try {
+                const response = await fetch('/api/citizens', { headers: { 'Authorization': token } });
+                allCitizens = await response.json();
+            } catch (error) { console.error("Błąd ładowania obywateli:", error); }
+
+            const civilianDiscordIdInput = document.getElementById('civilianDiscordId');
+            const suggestionsContainer = civilianDiscordIdInput.nextElementSibling;
+            setupCitizenAutocomplete(civilianDiscordIdInput, suggestionsContainer, allCitizens);
+
+
+            const buyoutInput = document.getElementById('buyout-months');
+            const pasteArea = document.getElementById('paste-image-area');
+            const photoUrlInput = document.getElementById('photoUrl');
+            const pasteAreaText = pasteArea.querySelector('span');
+
+            buyoutInput.addEventListener('input', renderSelectedCharges);
+
+            pasteArea.addEventListener('paste', async (e) => {
+                e.preventDefault();
+                const items = e.clipboardData.items;
+                for (const item of items) {
+                    if (item.type.indexOf('image') !== -1) {
+                        const file = item.getAsFile();
+                        pasteAreaText.textContent = 'Przesyłanie...';
+                        pasteArea.style.backgroundImage = `url(${URL.createObjectURL(file)})`;
+                        
+                        const reader = new FileReader();
+                        reader.onload = async (event) => {
+                            const base64Image = event.target.result.split(',')[1];
+                            try {
+                                const response = await fetch('https://api.imgur.com/3/image', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': `Client-ID ${IMGUR_CLIENT_ID}`,
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({ image: base64Image, type: 'base64' })
+                                });
+                                const data = await response.json();
+                                if (data.success) {
+                                    photoUrlInput.value = data.data.link;
+                                    pasteAreaText.textContent = 'Przesłano!';
+                                    pasteArea.classList.add('border-green-500');
+                                } else {
+                                    throw new Error(data.data.error);
+                                }
+                            } catch (error) {
+                                pasteAreaText.textContent = `Błąd: ${error.message}`;
+                                pasteArea.classList.add('border-red-500');
+                            }
+                        };
+                        reader.readAsDataURL(file);
+                        break; 
+                    }
+                }
+            });
+
+            document.getElementById('selected-charges').addEventListener('click', (e) => {
+                const removeButton = e.target.closest('.remove-charge-btn');
+                if (removeButton) {
+                    const idToRemove = parseInt(removeButton.dataset.id, 10);
+                    currentArrestCharges = currentArrestCharges.filter(c => c.id !== idToRemove);
+                    renderSelectedCharges();
+                }
+            });
+
+            const arrestForm = document.getElementById('arrest-form');
+            const formMessage = document.getElementById('form-message');
+
+            arrestForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                formMessage.textContent = 'Wysyłanie...';
+                
+                const totalMonths = currentArrestCharges.reduce((sum, charge) => sum + charge.lata, 0);
+                const buyoutMonthsVal = parseInt(buyoutInput.value, 10) || 0;
+                const totalFineFromCharges = currentArrestCharges.reduce((sum, charge) => sum + charge.price, 0);
+                const buyoutFine = buyoutMonthsVal * 1000;
+                const finalTotalFine = totalFineFromCharges + buyoutFine;
+                
+                const discordIdRaw = document.getElementById('civilianDiscordId').value;
+                const discordIdMatch = discordIdRaw.match(/<@(\d+)>/);
+                const civilianDiscordId = discordIdMatch ? discordIdMatch[1] : discordIdRaw;
+                
+                const arrestData = {
+                    reportType: 'areszt',
+                    officerDiscordId: userData.robloxId,
+                    civilianDiscordId: civilianDiscordId,
+                    civilianFullName: document.getElementById('civilianFullName').value,
+                    civilianAge: document.getElementById('civilianAge').value,
+                    civilianGender: document.getElementById('civilianGender').value,
+                    confiscatedItems: document.getElementById('confiscatedItems').value,
+                    photoUrl: document.getElementById('photoUrl').value,
+                    arrestLocation: document.getElementById('arrestLocation').value,
+                    jailLocation: document.getElementById('jailLocation').value,
+                    charges: currentArrestCharges,
+                    finalTotalFine: finalTotalFine,
+                    finalSentence: Math.max(0, totalMonths - buyoutMonthsVal),
+                };
+
+                fetch('/api/records', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': token },
+                    body: JSON.stringify(arrestData)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        formMessage.textContent = 'Raport aresztowania został wysłany!';
+                        arrestForm.reset();
+                        currentArrestCharges = [];
+                        pasteArea.style.backgroundImage = 'none';
+                        pasteAreaText.textContent = 'Wklej zdjęcie tutaj (Ctrl+V)';
+                        pasteArea.classList.remove('border-green-500', 'border-red-500');
+                        renderSelectedCharges();
+                        setTimeout(() => formMessage.textContent = '', 3000);
+                    } else { throw new Error(data.message); }
+                })
+                .catch(error => { formMessage.textContent = `Błąd: ${error.message}`; });
+            });
+            renderSelectedCharges();
+        });
+    </script>
+</body>
+</html>

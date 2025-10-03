@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raporty - MDT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style> 
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex h-screen">
+
+    <aside id="sidebar-container" class="w-64 bg-gray-800 p-4 flex flex-col min-h-screen flex-shrink-0"></aside>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <h1 class="text-3xl font-bold text-white mb-6">Raport po Służbie</h1>
+        
+        <form id="report-form" class="bg-gray-800 p-6 rounded-lg shadow-lg max-w-4xl mx-auto">
+            <div class="space-y-6">
+                <fieldset class="border-t border-gray-700 pt-4">
+                    <legend class="text-xl font-semibold text-white mb-4">Szczegóły Służby</legend>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <label for="report-stops" class="block text-gray-400 mb-1">Ilość zatrzymań</label>
+                            <input type="number" name="stops" id="report-stops" placeholder="0" class="w-full bg-gray-700 rounded p-2 cursor-not-allowed" readonly>
+                        </div>
+                        <div>
+                            <label for="report-tickets" class="block text-gray-400 mb-1">Ilość mandatów</label>
+                            <input type="number" name="tickets" id="report-tickets" placeholder="0" class="w-full bg-gray-700 rounded p-2 cursor-not-allowed" readonly>
+                        </div>
+                        <div>
+                            <label for="report-arrests" class="block text-gray-400 mb-1">Ilość aresztów</label>
+                            <input type="number" name="arrests" id="report-arrests" placeholder="0" class="w-full bg-gray-700 rounded p-2 cursor-not-allowed" readonly>
+                        </div>
+                        <div>
+                            <label for="report-warnings" class="block text-gray-400 mb-1">Ilość pouczeń</label>
+                            <input type="number" name="warnings" id="report-warnings" placeholder="0" class="w-full bg-gray-700 rounded p-2 cursor-not-allowed" readonly>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset class="border-t border-gray-700 pt-4">
+                    <legend class="text-xl font-semibold text-white mb-4">Dane</legend>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <label class="block text-gray-400">Imię i nazwisko</label>
+                            <input type="text" id="officer-name" class="w-full bg-gray-700 rounded p-2 mt-1 cursor-not-allowed" readonly>
+                        </div>
+                        <div>
+                            <label class="block text-gray-400">Stopień</label>
+                            <input type="text" id="officer-rank" class="w-full bg-gray-700 rounded p-2 mt-1 cursor-not-allowed" readonly>
+                        </div>
+                        <div>
+                            <label class="block text-gray-400">Odznaka</label>
+                            <input type="text" id="officer-badge" class="w-full bg-gray-700 rounded p-2 mt-1 cursor-not-allowed" readonly>
+                        </div>
+                         <div>
+                            <label class="block text-gray-400">Departament</label>
+                            <input type="text" id="officer-department" class="w-full bg-gray-700 rounded p-2 mt-1 cursor-not-allowed" readonly>
+                        </div>
+                         <div>
+                            <label class="block text-gray-400">Data</label>
+                            <input type="text" id="report-date" class="w-full bg-gray-700 rounded p-2 mt-1 cursor-not-allowed" readonly>
+                        </div>
+                        <div class="md:col-span-2">
+                             <label class="block text-gray-400">Podpis (wpisz swoje imię i nazwisko)</label>
+                            <input type="text" id="officer-signature" class="w-full bg-gray-700 rounded p-2 mt-1" required placeholder="Wpisz imię i nazwisko...">
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+            
+            <p id="form-message" class="text-center h-4 mt-6"></p>
+
+            <div class="mt-6 flex justify-end">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                    <i data-lucide="send" class="w-5 h-5 mr-2"></i>
+                    Wyślij Raport
+                </button>
+            </div>
+        </form>
+    </main>
+    
+    <script src="shared.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const userData = await loadSidebarAndUserData('reports');
+            if(!userData) return;
+            
+            const token = localStorage.getItem('mdt-token');
+            const form = document.getElementById('report-form');
+            const formMessage = document.getElementById('form-message');
+
+            // Autouzupełnianie stałych danych
+            document.getElementById('officer-name').value = userData.username;
+            document.getElementById('officer-rank').value = userData.rank;
+            document.getElementById('officer-badge').value = userData.badge;
+            document.getElementById('officer-department').value = userData.department;
+            document.getElementById('report-date').value = new Date().toLocaleDateString('pl-PL');
+
+            // Pobieranie i uzupełnianie statystyk z dnia
+            async function fetchAndPopulateDailyStats() {
+                try {
+                    const response = await fetch('/api/reports/today-stats', {
+                        headers: { 'Authorization': token }
+                    });
+                    if (!response.ok) {
+                        const errData = await response.json().catch(() => ({ message: 'Nie udało się pobrać statystyk. Błąd serwera.' }));
+                        throw new Error(errData.message);
+                    }
+                    const stats = await response.json();
+
+                    document.getElementById('report-stops').value = stats.stops;
+                    document.getElementById('report-tickets').value = stats.tickets;
+                    document.getElementById('report-arrests').value = stats.arrests;
+                    document.getElementById('report-warnings').value = stats.warnings;
+                } catch(error) {
+                    console.error("Błąd pobierania statystyk dziennych:", error);
+                    formMessage.textContent = error.message;
+                    formMessage.classList.add('text-red-400');
+                }
+            }
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                formMessage.textContent = 'Wysyłanie raportu...';
+                formMessage.classList.remove('text-green-400', 'text-red-400');
+
+                const reportData = {
+                    stops: document.getElementById('report-stops').value,
+                    tickets: document.getElementById('report-tickets').value,
+                    arrests: document.getElementById('report-arrests').value,
+                    warnings: document.getElementById('report-warnings').value,
+                    department: userData.department,
+                    name: userData.username,
+                    rank: userData.rank,
+                    badge: userData.badge,
+                    date: new Date().toLocaleDateString('pl-PL'),
+                    signature: document.getElementById('officer-signature').value
+                };
+
+                try {
+                    const response = await fetch('/api/reports', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': token },
+                        body: JSON.stringify(reportData)
+                    });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.message || 'Błąd serwera');
+                    
+                    formMessage.textContent = 'Raport został pomyślnie wysłany!';
+                    formMessage.classList.add('text-green-400');
+                    form.reset();
+                    
+                    document.getElementById('officer-name').value = userData.username;
+                    document.getElementById('officer-rank').value = userData.rank;
+                    document.getElementById('officer-badge').value = userData.badge;
+                    document.getElementById('officer-department').value = userData.department;
+                    document.getElementById('report-date').value = new Date().toLocaleDateString('pl-PL');
+                    await fetchAndPopulateDailyStats(); // Odśwież statystyki po wysłaniu
+
+                } catch (error) {
+                    formMessage.textContent = `Błąd: ${error.message}`;
+                    formMessage.classList.add('text-red-400');
+                } finally {
+                    setTimeout(() => {
+                        formMessage.textContent = '';
+                        formMessage.classList.remove('text-green-400', 'text-red-400');
+                    }, 5000);
+                }
+            });
+
+            // Inicjalizacja
+            fetchAndPopulateDailyStats();
+        });
+    </script>
+</body>
+</html>

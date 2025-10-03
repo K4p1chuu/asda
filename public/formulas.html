@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formułki - MDT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style> 
+        body { font-family: 'Inter', sans-serif; }
+        .formula-card {
+            border-left: 4px solid #3b82f6;
+        }
+        .copy-btn {
+            transition: background-color 0.2s;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex h-screen">
+
+    <aside id="sidebar-container" class="w-64 bg-gray-800 p-4 flex flex-col min-h-screen flex-shrink-0"></aside>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <h1 class="text-3xl font-bold text-white mb-8">Formułki i Procedury</h1>
+
+        <div class="space-y-6">
+            
+            <div class="bg-gray-800 rounded-lg shadow-lg">
+                <div class="p-6">
+                    <h2 class="text-xl font-semibold text-white mb-3">Prawa Mirandy</h2>
+                    <p class="text-sm text-gray-400 mb-4">Formułka odczytywana podczas aresztowania.</p>
+                    <div class="formula-card bg-gray-900 p-4 rounded-lg">
+                        <p id="miranda-rights" class="text-gray-300 whitespace-pre-wrap">Masz prawo zachować milczenie. Cokolwiek powiesz, może zostać użyte przeciwko tobie w sądzie. Masz prawo do adwokata. Jeśli nie stać cię na adwokata, zostanie on przydzielony z urzędu. Czy rozumiesz prawa, które ci właśnie przedstawiłem/am?</p>
+                        <button data-target="miranda-rights" class="copy-btn mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center text-sm">
+                            <i data-lucide="copy" class="w-4 h-4 mr-2"></i>Kopiuj
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg shadow-lg">
+                <div class="p-6">
+                    <h2 class="text-xl font-semibold text-white mb-3">Formułki do Wylegitymowania się</h2>
+                    
+                    <div class="space-y-6 mt-4">
+                        <div>
+                            <h3 class="font-semibold text-blue-400">Podstawowa</h3>
+                            <div class="formula-card bg-gray-900 p-4 rounded-lg mt-2">
+                                <p id="basic-intro" class="text-gray-300">Ładowanie formułki...</p>
+                                <button data-target="basic-intro" class="copy-btn mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center text-sm">
+                                    <i data-lucide="copy" class="w-4 h-4 mr-2"></i>Kopiuj
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="font-semibold text-blue-400">Detective Task Unit (DTU)</h3>
+                             <div class="formula-card bg-gray-900 p-4 rounded-lg mt-2">
+                                <p id="dtu-intro" class="text-gray-300">Witam, z tej strony [Ranga w DTU] [Nazwisko], mój numer identyfikacyjny to [Druga Odznaka]. Mamy do Pana/Pani sprawę...</p>
+                                 <button data-target="dtu-intro" class="copy-btn mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center text-sm">
+                                    <i data-lucide="copy" class="w-4 h-4 mr-2"></i>Kopiuj
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="font-semibold text-blue-400">Special Response Team (SRT)</h3>
+                            <div class="formula-card bg-gray-900 p-4 rounded-lg mt-2">
+                                <p class="text-gray-300">SRT nie legitymuje się. Maksymalnie można podać wcześniej nadany numer na akcję (np. "Mój numer to K-23").</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+    
+    <script src="shared.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const userData = await loadSidebarAndUserData('formulas');
+            if (!userData) return;
+
+            // Automatyczne uzupełnianie danych
+            const basicIntro = document.getElementById('basic-intro');
+            const dtuIntro = document.getElementById('dtu-intro');
+            
+            const lastName = userData.username.split(' ').pop();
+            const departmentText = userData.department === 'WSP' 
+                ? 'policja stanowa WSP' 
+                : "Biuro Szeryfa Hrabstwa Outagamie";
+
+            basicIntro.textContent = `Witam, nazywam się ${userData.username}, mój numer odznaki to ${userData.badge}, ${departmentText}. Zna Pan/Pani powód zatrzymania? Poproszę dokumenty.`;
+            dtuIntro.textContent = `Witam, z tej strony [Ranga w DTU] ${lastName}, mój numer identyfikacyjny to [Druga Odznaka]. Mamy do Pana/Pani sprawę...`;
+
+            // Logika kopiowania
+            document.querySelectorAll('.copy-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetId = button.dataset.target;
+                    const textToCopy = document.getElementById(targetId).textContent;
+                    
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        button.innerHTML = '<i data-lucide="check" class="w-4 h-4 mr-2"></i>Skopiowano!';
+                        button.classList.replace('bg-blue-600', 'bg-green-600');
+                        setTimeout(() => {
+                            button.innerHTML = '<i data-lucide="copy" class="w-4 h-4 mr-2"></i>Kopiuj';
+                            button.classList.replace('bg-green-600', 'bg-blue-600');
+                            lucide.createIcons();
+                        }, 2000);
+                        lucide.createIcons();
+                    }).catch(err => {
+                        console.error('Nie udało się skopiować tekstu: ', err);
+                    });
+                });
+            });
+
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>

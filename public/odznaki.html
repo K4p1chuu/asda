@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Odznaki i Statystyki - WSP & OCSO MDT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style> 
+        body { font-family: 'Inter', sans-serif; }
+        .rank-color { color: #003087; }
+        .fira-code { font-family: 'Fira Code', monospace; }
+        .modal-backdrop { display: none; }
+        .modal-backdrop.flex { display: flex; }
+        #officer-records-modal-content::-webkit-scrollbar { width: 4px; }
+        #officer-records-modal-content::-webkit-scrollbar-thumb { background-color: #4b5563; border-radius: 20px; }
+        .dept-btn.active { background-color: #3b82f6; color: white; }
+        .on-leave { background-color: rgba(251, 146, 60, 0.2) !important; }
+        .on-leave:hover { background-color: rgba(251, 146, 60, 0.3) !important; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex h-screen">
+
+    <aside id="sidebar-container" class="w-64 bg-gray-800 p-4 flex flex-col min-h-screen flex-shrink-0"></aside>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <h1 class="text-3xl font-bold text-white mb-6">Odznaki i Statystyki Funkcjonariuszy</h1>
+
+        <div class="mb-6 flex justify-center gap-4">
+            <button id="wsp-btn" class="dept-btn active bg-gray-700 hover:bg-gray-600 font-bold py-2 px-6 rounded-lg transition-colors">WSP</button>
+            <button id="ocso-btn" class="dept-btn bg-gray-700 hover:bg-gray-600 font-bold py-2 px-6 rounded-lg transition-colors">OCSO</button>
+        </div>
+
+        <div id="rank-legend" class="bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
+            </div>
+
+        <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+             <div class="overflow-x-auto">
+                <table class="min-w-full text-sm text-left text-gray-300">
+                    <thead class="text-xs text-gray-400 uppercase bg-gray-700">
+                        <tr>
+                            <th class="px-6 py-3">Funkcjonariusz</th>
+                            <th class="px-6 py-3">Dane</th>
+                            <th class="px-6 py-3 text-center">Mandaty</th>
+                            <th class="px-6 py-3 text-center">Areszty</th>
+                            <th class="px-6 py-3 text-center">Pouczenia</th>
+                            <th class="px-6 py-3">Łączna kwota</th>
+                        </tr>
+                    </thead>
+                    <tbody id="officers-table-body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <div id="officer-records-modal" class="modal-backdrop fixed top-0 left-0 w-full h-full bg-black bg-opacity-70 z-50 justify-center items-center p-4">
+        <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl p-6 relative max-h-full flex flex-col">
+            <h3 id="modal-officer-name" class="text-xl font-medium leading-6 text-white mb-4">Wystawione Rekordy</h3>
+            <div id="officer-records-modal-content" class="flex-grow overflow-y-auto space-y-4 text-sm">
+            </div>
+            <button id="modal-close-button" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+    </div>
+    
+    <script src="shared.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const userData = await loadSidebarAndUserData('odznaki');
+            if(!userData) return;
+            
+            const token = localStorage.getItem('mdt-token');
+            const tableBody = document.getElementById('officers-table-body');
+            const rankLegendContainer = document.getElementById('rank-legend');
+
+            const modal = document.getElementById('officer-records-modal');
+            const modalContent = document.getElementById('officer-records-modal-content');
+            const modalOfficerName = document.getElementById('modal-officer-name');
+            const modalCloseButton = document.getElementById('modal-close-button');
+
+            const wspBtn = document.getElementById('wsp-btn');
+            const ocsoBtn = document.getElementById('ocso-btn');
+            
+            let allOfficers = [];
+            let currentDepartment = 'WSP';
+
+            const rankConfig = {
+                WSP: {
+                    "High Rank": { ranks: ['Superintendent', 'Deputy Chief Superintendent', 'Colonel', 'Lieutenant Colonel', 'Major'], color: 'text-red-400' },
+                    "Mid Rank": { ranks: ['Captain', 'Lieutenant', 'Sergeant', 'Master Trooper'], color: 'text-yellow-400' },
+                    "Low Rank": { ranks: ['Trooper First Class', 'Trooper', 'Probationary Trooper'], color: 'text-green-400' }
+                },
+                OCSO: {
+                    "High Rank": { ranks: ['Sheriff', 'Undersheriff', 'Colonel', 'Major', 'Captain'], color: 'text-red-400' },
+                    "Mid Rank": { ranks: ['Lieutenant Colonel', 'Lieutenant', 'Staff Sergeant', 'Sergeant'], color: 'text-yellow-400' },
+                    "Low Rank": { ranks: ['Corporal', 'Deputy', 'Probationary Deputy'], color: 'text-green-400' }
+                }
+            };
+            
+            function updateLegend() {
+                const legend = rankConfig[currentDepartment];
+                let legendHTML = `<h2 class="text-xl font-semibold text-white mb-4">Legenda Rang - ${currentDepartment}</h2><pre class="fira-code text-sm text-gray-300 bg-gray-900 p-4 rounded-md overflow-x-auto">`;
+                for (const categoryName in legend) {
+                    legendHTML += `<span class="${legend[categoryName].color} font-bold">${categoryName}</span>\n`;
+                    legend[categoryName].ranks.forEach(rank => {
+                        legendHTML += `${rank}\n`;
+                    });
+                    legendHTML += '\n';
+                }
+                legendHTML += `</pre>`;
+                rankLegendContainer.innerHTML = legendHTML;
+            }
+
+            async function fetchAndDisplayOfficers() {
+                try {
+                    const response = await fetch('/api/officers/stats', { headers: { 'Authorization': token } });
+                    allOfficers = await response.json();
+                    renderTable();
+                } catch (error) {
+                    console.error("Błąd ładowania statystyk:", error);
+                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-red-500">Nie udało się załadować danych.</td></tr>`;
+                }
+            }
+
+            function renderTable() {
+                const departmentOfficers = allOfficers.filter(o => o.department === currentDepartment);
+                const rankCategories = rankConfig[currentDepartment];
+
+                const groupedByRank = departmentOfficers.reduce((acc, officer) => {
+                    (acc[officer.rank] = acc[officer.rank] || []).push(officer);
+                    return acc;
+                }, {});
+                
+                tableBody.innerHTML = '';
+                
+                for (const categoryName in rankCategories) {
+                    const category = rankCategories[categoryName];
+                    let categoryHasMembers = false;
+                    
+                    for (const rank of category.ranks) {
+                        if (groupedByRank[rank] && groupedByRank[rank].filter(o => o.username !== 'Administrator').length > 0) {
+                            categoryHasMembers = true;
+                            break;
+                        }
+                    }
+
+                    if (categoryHasMembers) {
+                        const headerRow = document.createElement('tr');
+                        headerRow.className = 'bg-gray-700';
+                        headerRow.innerHTML = `<td colspan="6" class="px-6 py-2 text-center font-bold ${category.color}">${categoryName}</td>`;
+                        tableBody.appendChild(headerRow);
+                        
+                        category.ranks.forEach(rank => {
+                            if (groupedByRank[rank]) {
+                                groupedByRank[rank]
+                                    .filter(o => o.username !== 'Administrator')
+                                    .sort((a, b) => parseInt(a.badge, 10) - parseInt(b.badge, 10))
+                                    .forEach(officer => {
+                                        const joinedDate = officer.joinedAt ? new Date(officer.joinedAt).toLocaleDateString('pl-PL') : 'Brak danych';
+                                        const row = document.createElement('tr');
+                                        
+                                        const is_on_leave = officer.onLeave === true;
+                                        row.className = `hover:bg-gray-700 cursor-pointer ${is_on_leave ? 'on-leave' : ''}`;
+                                        const leave_badge = is_on_leave ? `<span class="ml-2 text-xs font-bold text-orange-400 bg-orange-900/50 px-2 py-1 rounded-full">URLOP</span>` : '';
+
+                                        row.dataset.officerEmail = officer.email;
+                                        row.dataset.officerName = officer.username;
+
+                                        row.innerHTML = `
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="font-bold rank-color">[${officer.badge}] ${officer.username}${leave_badge}</div>
+                                                <div class="text-xs text-gray-400">${officer.rank}</div>
+                                            </td>
+                                            <td class="px-6 py-4 text-xs text-gray-400">
+                                                <div><b>ID Discord:</b> ${officer.robloxId || 'N/A'}</div>
+                                                <div><b>Nick Discord:</b> ${officer.discordNick || 'N/A'}</div>
+                                                <div><b>Nick Roblox:</b> ${officer.robloxNick || 'N/A'}</div>
+                                                <div><b>W Służbie od:</b> ${joinedDate}</div>
+                                            </td>
+                                            <td class="px-6 py-4 text-center">
+                                                <div class="text-lg font-bold text-amber-400">${officer.stats.tickets.count}</div>
+                                                <div class="text-xs text-gray-400">$${officer.stats.tickets.totalValue}</div>
+                                            </td>
+                                            <td class="px-6 py-4 text-center">
+                                                <div class="text-lg font-bold text-red-400">${officer.stats.arrests.count}</div>
+                                                <div class="text-xs text-gray-400">$${officer.stats.arrests.totalValue}</div>
+                                            </td>
+                                            <td class="px-6 py-4 text-center">
+                                                <div class="text-lg font-bold text-yellow-400">${officer.stats.warnings.count}</div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap font-bold text-green-400">$${officer.stats.totalValue}</td>
+                                        `;
+                                        tableBody.appendChild(row);
+                                    });
+                            }
+                        });
+                    }
+                }
+            }
+
+            async function showOfficerRecords(officerEmail, officerName) {
+                modalOfficerName.textContent = `Wystawione Rekordy - ${officerName}`;
+                modalContent.innerHTML = '<p>Ładowanie...</p>';
+                modal.classList.add('flex');
+
+                try {
+                    const response = await fetch(`/api/officers/records/${encodeURIComponent(officerEmail)}`, { headers: { 'Authorization': token } });
+                    const records = await response.json();
+
+                    let html = '';
+                    if (records.length === 0) {
+                        html = '<p>Ten funkcjonariusz nie wystawił jeszcze żadnych rekordów.</p>';
+                    } else {
+                        const tickets = records.filter(r => r.reportType === 'mandat');
+                        const arrests = records.filter(r => r.reportType === 'areszt');
+                        const warnings = records.filter(r => r.reportType === 'pouczenie');
+                        
+                        if (tickets.length > 0) {
+                            html += '<h4 class="text-lg font-semibold text-amber-400 mb-2">Mandaty</h4>';
+                            tickets.forEach(t => {
+                                html += `<div class="bg-gray-900 p-3 rounded-md mb-2"><b>Obywatel:</b> ${t.civilianName || 'N/A'} | <b>Kwota:</b> $${t.totalFine} | <b>Data:</b> ${new Date(t.issueDate).toLocaleDateString('pl-PL')}</div>`;
+                            });
+                        }
+                        if (arrests.length > 0) {
+                            html += '<h4 class="text-lg font-semibold text-red-400 mt-4 mb-2">Areszty</h4>';
+                            arrests.forEach(a => {
+                                html += `<div class="bg-gray-900 p-3 rounded-md mb-2"><b>Obywatel:</b> ${a.civilianFullName || 'N/A'} | <b>Wyrok:</b> ${a.finalSentence} min | <b>Kwota:</b> $${a.finalFine || 0} | <b>Data:</b> ${new Date(a.issueDate).toLocaleDateString('pl-PL')}</div>`;
+                            });
+                        }
+                         if (warnings.length > 0) {
+                            html += '<h4 class="text-lg font-semibold text-yellow-400 mt-4 mb-2">Pouczenia</h4>';
+                            warnings.forEach(w => {
+                                html += `<div class="bg-gray-900 p-3 rounded-md mb-2"><b>Obywatel:</b> ${w.civilianName || 'N/A'} | <b>Data:</b> ${new Date(w.issueDate).toLocaleDateString('pl-PL')}</div>`;
+                            });
+                        }
+                    }
+                    modalContent.innerHTML = html;
+                } catch (error) {
+                    modalContent.innerHTML = '<p class="text-red-500">Nie udało się załadować rekordów.</p>';
+                }
+            }
+            
+            tableBody.addEventListener('click', (e) => {
+                const row = e.target.closest('tr');
+                if (row && row.dataset.officerEmail) {
+                    showOfficerRecords(row.dataset.officerEmail, row.dataset.officerName);
+                }
+            });
+
+            modalCloseButton.addEventListener('click', () => {
+                modal.classList.remove('flex');
+            });
+
+            wspBtn.addEventListener('click', () => {
+                currentDepartment = 'WSP';
+                wspBtn.classList.add('active');
+                ocsoBtn.classList.remove('active');
+                updateLegend();
+                renderTable();
+            });
+
+            ocsoBtn.addEventListener('click', () => {
+                currentDepartment = 'OCSO';
+                ocsoBtn.classList.add('active');
+                wspBtn.classList.remove('active');
+                updateLegend();
+                renderTable();
+            });
+
+            // Inicjalizacja
+            updateLegend();
+            fetchAndDisplayOfficers();
+        });
+    </script>
+</body>
+</html>
